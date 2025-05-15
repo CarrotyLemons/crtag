@@ -1,0 +1,15 @@
+# Overview
+- Investigate potential to tag folders (e.g. tagging control algorithms as Rust)
+    - integration with shell script for sorting by tag
+    - further specification for directory?
+    - custom file format in directory to tag? it can tag the parent directory and any sibling directories/files?
+    - nested tags (some tags encompass others)
+    - attribute tagged tags (e.g. control algorithm can be tagged both math and programming)
+    - sidecar files??!?
+        - can be lost when original files move
+        - would require all changes to be done through custom file mover that moves sidecar files as well
+    - tagstudio stores the metadata internally
+    - tags
+        - name
+        - shorthand
+        - aliases
