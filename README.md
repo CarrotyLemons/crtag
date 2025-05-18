@@ -62,6 +62,12 @@ carrotag subtag rust coding
 Tags the relevant tag with the supertag so all searches of the supertag return the tag.
 A single tag can have multiple supertags and vice versa.
 
+```zsh
+carrotag hidden --true
+carrotag hidden --false
+```
+Specifies whether files should be hidden. This involves placing the toml files inside a `.carrotag` directory which the user cannot see unless the file system can.
+
 # Implemented commands
 
 # File structure
