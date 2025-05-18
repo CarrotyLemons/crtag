@@ -29,7 +29,11 @@ If a file cannot be found (moved) it searches for matching names and/or hashes. 
 All tags can only be letters underscores and numbers
 `(?:[a-z]|[A-Z]|_|[0-9])+`
 
-# Commands to implement
+# Functionality to implement
+## General functionality
+Terminal text output colouring
+
+## Commands to implement
 ```zsh
 carrotag add filename.txt tag1 tag2
 carrotag add directoryname tag1 tag2 tag3
@@ -67,6 +71,12 @@ carrotag hidden --true
 carrotag hidden --false
 ```
 Specifies whether files should be hidden. This involves placing the toml files inside a `.carrotag` directory which the user cannot see unless the file system can.
+
+```zsh
+carrotag check
+carrotag check file_path
+```
+Searches for misplaced files or changes and returns them
 
 # Implemented commands
 
