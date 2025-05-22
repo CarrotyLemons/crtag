@@ -64,13 +64,7 @@ carrotag subtag tag supertag
 carrotag subtag rust coding
 ```
 Tags the relevant tag with the supertag so all searches of the supertag return the tag.
-A single tag can have multiple supertags and vice versa.
-
-```zsh
-carrotag hidden --true
-carrotag hidden --false
-```
-Specifies whether files should be hidden. This involves placing the toml files inside a `.carrotag` directory which the user cannot see unless the file system can.
+A single tag can have multiple supertags and vice versa. This will create the tag and supertag if they do not exist.
 
 ```zsh
 carrotag check
@@ -78,20 +72,27 @@ carrotag check file_path
 ```
 Searches for misplaced files or changes and returns them
 
+```zsh
+carrotag new tag1 tag2
+```
+Creates new tags
 # Implemented commands
 
 # File structure
 ## CarroTagDefinitions
 ```toml
 [rust]
-aliases = ["rustacean", "ferris"]
+version = "1.0.0"
+aliases = ["rust", "rustacean", "ferris"]
 supertags = ["coding", "languages"]
-version = "0.1.0"
 
-[english]
-aliases = ["eng"]
-supertags = ["language"]
-version = "0.1.0"
+[coding]
+version = "1.0.0"
+aliases = ["coding", "code"]
+
+[languages]
+version = "1.0.0"
+aliases = ["languages"]
 ```
 
 ## CarroTag
@@ -99,15 +100,12 @@ version = "0.1.0"
 [myfile1]
 hash = "644bcc7e564373040999aac89e7622f3ca71fba1d972fd94a31c3bfbf24e3938"
 tags = ["rust", "coding"]
-version = "0.1.0" # What version of CarroTag this was created to be compatible with 
+version = "1.0.0" # What version of CarroTag this was created to be compatible with 
 
-[mydirectory.timing]
-creation_time = "18-May-2025"
-
-[mydirectory1]
+[mydirectory]
 # There is no hash for directories, just confirming name
 tags = ["art", "painting", "fireworks"]
-version = "0.1.0" # What version of CarroTag this was created to be compatible with 
+version = "1.0.0" # What version of CarroTag this was created to be compatible with 
 
 [mydirectory.timing]
 creation_time = "18-May-2025"

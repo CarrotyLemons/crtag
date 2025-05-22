@@ -1,0 +1,12 @@
+[rust]
+version = "1.0.0"
+aliases = ["rust", "rustacean", "ferris"]
+supertags = ["coding", "languages"]
+
+[coding]
+version = "1.0.0"
+aliases = ["coding", "code"]
+
+[languages]
+version = "1.0.0"
+aliases = ["languages"]
