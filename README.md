@@ -4,7 +4,7 @@ Currently I am running into problems with my file system. When my files have mul
 - Able to search files by tag
     - name
     - alias'
-- Absolutely must be system interoperable (CLI should work in any system which supports a CLI and a rust compiler target)
+- Should work on all UNIX based OS's
 
 There is also some additional functionality I want to implement
 - automatic timestamp tag (search by year, year+month, year+month+day)
@@ -15,25 +15,32 @@ There is also some additional functionality I want to implement
 - Tag metadata is bundled horizontally as `CRTag.toml` sidecar files
 - Changes made are pushed out to the filesystem (error raised if conflict found)
 
-CarroTag must be run inside a directory that contains a `CRTagDefinitions.toml` which will hold all the tags and aliases. The program will attempt to search upwards for these definitions but will error if not found.
+CRTag must be run inside a directory that contains a `CRTagDefinitions.toml` which will hold all the tags and aliases. The program will attempt to search upwards for these definitions but will error if not found.
 
 If a file cannot be found it searches for matching names and/or hashes. If either or those are found in the search path it suggests the moving of relevant tags. Otherwise it continues on and prints that a missing file was encountered.
 
 All tags can only be ASCII symbols.
 
 # Commands to implement
+## init
+```zsh
+crtag init
+crtag init <path>
+```
+Creates the CRTagDefinitions at the specified path
+
 ## add
 ```zsh
-carrotag add filename.txt <tags>
-carrotag add directoryname <tags>
+crtag add filename.txt <tags>
+crtag add directoryname <tags>
 ```
 Adds tags to relevant targets and creates the `CRTag.toml` if necessary.
 Errors on tags not being known
 
 ## find
 ```zsh
-carrotag find <search_terms> --path pathname
-carrotag find <search_terms> -p pathname
+crtag find <search_terms> --path pathname
+crtag find <search_terms> -p pathname
 ```
 Searches for the search terms in the following characteristics, inside the specified path
 - filename
@@ -43,16 +50,16 @@ After finding matches they are all printed out
 
 ## date
 ```zsh
-carrotag date filename.txt "now"
-carrotag date filename.txt "18-May-2025"
+crtag date filename.txt "now"
+crtag date filename.txt "18-May-2025"
 ```
 This will add either the current date or the specified date to the alternate_times. If the input is invalid it will error
 
 ## subtag
 ```zsh
-carrotag subtag <supertag> <subtag>
-carrotag subtag coding rust
-carrotag subtag languages rust
+crtag subtag <supertag> <subtag>
+crtag subtag coding rust
+crtag subtag languages rust
 ```
 Tags the relevant tag with the supertag so all searches of the supertag return the tag.
 A single tag can have multiple supertags and vice versa. This will create the tag and supertag if they do not exist.
@@ -60,14 +67,14 @@ This is case-sensitive, and errors on tags not being known.
 
 ## check
 ```zsh
-carrotag check
-carrotag check file_path
+crtag check
+crtag check file_path
 ```
 Searches for misplaced files or changes and attempts to find where they have gone. Returning the results
 
 ## new
 ```zsh
-carrotag new tag1 tag2
+crtag new tag1 tag2
 ```
 Creates new tags
 
