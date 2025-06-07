@@ -1,10 +1,11 @@
 mod init;
+mod load_definitions;
 
 /// specifies the semantic version of CarroTag being used
 static VERSION: &str = "1.0.0";
 
 /// is used to receive the next command line argument
-fn _recieve_command_line(arguments: &mut std::env::Args) -> Option<String> {
+fn recieve_command_line(arguments: &mut std::env::Args) -> Option<String> {
     match arguments.next() {
         None => {
             println!("Command not recieved!");
@@ -21,21 +22,6 @@ fn _recieve_command_line(arguments: &mut std::env::Args) -> Option<String> {
     }
 }
 
-/// loads the `CRTagDefinitions.toml`
-fn _load_definitions() -> Result<toml::map::Map<String, toml::Value>, String> {
-    // TODO: make the function search upwards for the definitions
-
-    let carrotag_definitions;
-    match std::fs::read_to_string(".carrotag/carrotag_definitions.toml") {
-        Ok(string) => {
-            carrotag_definitions = string;
-        }
-        Err(string) => return Err(format!("CRTagDefinitions.toml not found: {string}")),
-    };
-
-    Ok(carrotag_definitions.parse::<toml::Table>().unwrap())
-}
-
 fn main() {
     // Gather all command line arguments
     let mut arguments = std::env::args();
@@ -44,7 +30,7 @@ fn main() {
     arguments.next();
 
     // Recieve the current executable command
-    let command = match _recieve_command_line(&mut arguments) {
+    let command = match recieve_command_line(&mut arguments) {
         None => return,
         Some(message) => message,
     };
@@ -68,17 +54,6 @@ fn main() {
 
             init::run(path)
         }
-
-        // Load the CRTagDefinitions
-        // ```
-        //let definitions = match _load_definitions() {
-        //    Ok(map) => map,
-        //    Err(message) => {
-        //        println!("{message}");
-        //        return;
-        //    }
-        //};
-        // ```
         // "add" => add(arguments, definitions),
         // "find" => find(arguments, definitions),
         // "date" => date(arguments, definitions),
