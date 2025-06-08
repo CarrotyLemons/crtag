@@ -82,7 +82,7 @@ Creates new tags
 ## CRTagDefinitions
 ```toml
 [rust]
-version = "1.0.0" # Describes the semantic versioning of the program version that last looked over this tag
+version = "1.0.0" # Describes the semantic versioning of the program version that created this tag
 aliases = ["rust", "rustacean", "ferris"] # Shorthands and alternate names
 
 [coding]
@@ -101,7 +101,7 @@ subtags = ["rust"]
 [myfile1]
 hash = "644bcc7e564373040999aac89e7622f3ca71fba1d972fd94a31c3bfbf24e3938"
 tags = ["rust", "coding"]
-version = "1.0.0" # Describes the semantic versioning of the program that last looked over this tag
+version = "1.0.0" # Describes the semantic versioning of the program that tagged this file
 
 [mydirectory]
 # There is no hash for directories
