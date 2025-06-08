@@ -7,9 +7,6 @@ Currently I am running into problems with my file system. When my files have mul
 - Should work on all UNIX based OS's
 
 There is also some additional functionality I want to implement
-- automatic timestamp tag (search by year, year+month, year+month+day)
-    - Would be created on first creation of that tag
-    - Can be edited manually and with command
 - CLI
 - Hashing of files to check for renaming (only works if contents are unchanged)
 - Tag metadata is bundled horizontally as `CRTag.toml` sidecar files
@@ -47,13 +44,6 @@ Searches for the search terms in the following characteristics, inside the speci
 - text inside plaintext documents
 - tags, subtags and tag aliases (case insensitive)
 After finding matches they are all printed out
-
-## date
-```zsh
-crtag date filename.txt "now"
-crtag date filename.txt "18-May-2025"
-```
-This will add either the current date or the specified date to the alternate_times. If the input is invalid it will error
 
 ## subtag
 ```zsh
@@ -107,11 +97,4 @@ version = "1.0.0" # Describes the semantic versioning of the program that tagged
 # There is no hash for directories
 tags = ["art", "painting", "fireworks"]
 version = "1.0.0"
-
-[mydirectory.timing]
-creation_time = "18-May-2025"
-alternate_times = ["25-May-2025", "01-Jan-2100"] # Added by the user
 ```
-
-# Current Limitations
-- Currently only `dd-mmm-yyyy` date formats are supported
