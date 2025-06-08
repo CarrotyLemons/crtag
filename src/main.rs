@@ -1,4 +1,4 @@
-use std::{env::Args, fmt::Arguments, path::PathBuf};
+use std::{env::Args, path::PathBuf, path::Path};
 
 /// specifies the semantic version of CarroTag being used
 static VERSION: &str = "1.0.0";
@@ -37,7 +37,7 @@ fn main() {
                 }
             };
 
-            let crtag_path = std::path::Path::new(crtag_path.as_str()).to_path_buf();
+            let crtag_path = Path::new(crtag_path.as_str()).to_path_buf();
 
             match ensure_file_exists(&crtag_path, "CRTagDefinitions.toml".to_string()) {
                 Ok(_) => Ok(()),
@@ -46,7 +46,7 @@ fn main() {
         }
         "add" => {
             let target_path = match arguments.next() {
-                Some(path) => std::path::Path::new(path.as_str()).to_path_buf(),
+                Some(path) => Path::new(path.as_str()).to_path_buf(),
                 None => {
                     println!("Could not add: Insufficient arguments supplied!");
                     return;
@@ -80,7 +80,7 @@ fn main() {
     };
 }
 
-fn add(mut target_path: PathBuf, tags: std::env::Args) -> Result<(), String> {
+fn add(mut target_path: PathBuf, tags: Args) -> Result<(), String> {
     // load definitions
     let definitions = load_definitions()?;
 
@@ -149,11 +149,11 @@ fn new(tags: Args) -> Result<(), String> {
             );
             tag_values.insert(
                 "aliases".to_string(),
-                toml::Value::Array(std::vec::Vec::new()),
+                toml::Value::Array(Vec::new()),
             );
             tag_values.insert(
                 "subtags".to_string(),
-                toml::Value::Array(std::vec::Vec::new()),
+                toml::Value::Array(Vec::new()),
             );
 
             let tag_values = toml::value::Value::Table(tag_values);
@@ -244,7 +244,7 @@ fn ensure_crtag_has_tag_on_target(
     let crtag_tags = match crtag.get("tags") {
         Some(contents) => contents.clone(),
         None => {
-            toml::value::Value::Array(std::vec::Vec::new())
+            toml::value::Value::Array(Vec::new())
         }
     };
 
@@ -297,11 +297,11 @@ fn store_definitions(definitions: &TomlMap) -> Result<(), String> {
 
 /// attempts to find the `CRTagDefinitions.toml` file
 fn locate_definitions() -> Result<PathBuf, String> {
-    let mut definitions_path = std::path::Path::new(".crtag/CRTagDefinitions.toml").to_path_buf();
+    let mut definitions_path = Path::new(".crtag/CRTagDefinitions.toml").to_path_buf();
 
     // Search all parent directories for definitions
     while !definitions_path.is_file() {
-        let upper_directory = match std::path::Path::new("").parent() {
+        let upper_directory = match Path::new("").parent() {
             Some(path) => path,
             None => {
                 return Err("Could not load definitions: Definitions not found!".to_string());
