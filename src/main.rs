@@ -68,6 +68,10 @@ fn main() {
             subtag(tag, arguments)
         },
         "new" => new(arguments),
+        "version" => {
+            println!("{VERSION}");
+            Ok(())
+        },
         _ => {
             println!("Command was invalid!");
             return;

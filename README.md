@@ -15,7 +15,7 @@ CRTag must be run inside a directory that contains a `CRTagDefinitions.toml` whi
 
 All tags can only be ASCII symbols. This is not enforced but the program is not guaranteed to work with other character sets.
 
-# Commands to implement
+# Commands
 ## init
 ```zsh
 crtag init
@@ -53,6 +53,12 @@ This is case-sensitive, and errors on tags not being known.
 crtag new tag1 tag2
 ```
 Creates new tags
+
+## version
+```zsh
+crtag version
+```
+Prints out the version of crtag that is running
 
 # File structure
 ## CRTagDefinitions
