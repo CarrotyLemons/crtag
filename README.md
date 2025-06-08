@@ -8,15 +8,12 @@ Currently I am running into problems with my file system. When my files have mul
 
 There is also some additional functionality I want to implement
 - CLI
-- Hashing of files to check for renaming (only works if contents are unchanged)
-- Tag metadata is bundled horizontally as `CRTag.toml` sidecar files
-- Changes made are pushed out to the filesystem (error raised if conflict found)
+- Tag metadata is bundled inside a directory as `CRTag.toml` sidecar files
+- Changes made are pushed out to the filesystem
 
 CRTag must be run inside a directory that contains a `CRTagDefinitions.toml` which will hold all the tags and aliases. The program will attempt to search upwards for these definitions but will error if not found.
 
-If a file cannot be found it searches for matching names and/or hashes. If either or those are found in the search path it suggests the moving of relevant tags. Otherwise it continues on and prints that a missing file was encountered.
-
-All tags can only be ASCII symbols.
+All tags can only be ASCII symbols. This is not enforced but the program is not guaranteed to work with other character sets.
 
 # Commands to implement
 ## init
@@ -36,14 +33,10 @@ Errors on tags not being known
 
 ## find
 ```zsh
-crtag find <search_terms> --path pathname
-crtag find <search_terms> -p pathname
+crtag find <search_terms>
 ```
-Searches for the search terms in the following characteristics, inside the specified path
-- filename
-- text inside plaintext documents
-- tags, subtags and tag aliases (case insensitive)
-After finding matches they are all printed out
+Searches for the tag or its subtags in the `CRTag.toml` files, down from `CRTagDefinitions.toml`
+After finding matches they are all printed out.
 
 ## subtag
 ```zsh
@@ -55,13 +48,6 @@ Tags the relevant tag with the supertag so all searches of the supertag return t
 A single tag can have multiple supertags and vice versa. This will create the tag and supertag if they do not exist.
 This is case-sensitive, and errors on tags not being known.
 
-## check
-```zsh
-crtag check
-crtag check file_path
-```
-Searches for misplaced files or changes and attempts to find where they have gone. Returning the results
-
 ## new
 ```zsh
 crtag new tag1 tag2
@@ -71,30 +57,29 @@ Creates new tags
 # File structure
 ## CRTagDefinitions
 ```toml
-[rust]
-version = "1.0.0" # Describes the semantic versioning of the program version that created this tag
-aliases = ["rust", "rustacean", "ferris"] # Shorthands and alternate names
-
 [coding]
-version = "1.0.0"
-aliases = ["coding", "code"]
+aliases = ["coding", "code"] # Shorthands and alternate names
 subtags = ["rust"]
+version = "1.0.0" # Describes the semantic versioning of the program version that created this tag
 
 [languages]
-version = "1.0.0"
 aliases = ["languages"]
 subtags = ["rust"]
+version = "1.0.0"
+
+[rust]
+aliases = ["rust", "rustacean", "ferris"]
+version = "1.0.0"
+
 ```
 
 ## CRTag
 ```toml
-[myfile1]
-hash = "644bcc7e564373040999aac89e7622f3ca71fba1d972fd94a31c3bfbf24e3938"
 tags = ["rust", "coding"]
 version = "1.0.0" # Describes the semantic versioning of the program that tagged this file
-
-[mydirectory]
-# There is no hash for directories
-tags = ["art", "painting", "fireworks"]
-version = "1.0.0"
 ```
+
+# Future improvement
+If continue with this, I might consider the following
+- creating types and associated methods for tag and definitions files.
+- hashing files to detect if they have been moved, and offering to alter the relevant sidecar files
