@@ -1,4 +1,4 @@
-use std::{path::PathBuf};
+use std::{env::Args, fmt::Arguments, path::PathBuf};
 
 /// specifies the semantic version of CarroTag being used
 static VERSION: &str = "1.0.0";
@@ -56,7 +56,17 @@ fn main() {
             add(target_path, arguments)
         }
         // "find" => find(arguments, definitions),
-        // "subtag" => subtag(arguments, definitions),
+        "subtag" => {
+            let tag = match arguments.next() {
+                Some(contents) => contents,
+                None => {
+                    println!("Could not subtag: Insufficient arguments supplied!");
+                    return;
+                }
+            };
+
+            subtag(tag, arguments)
+        },
         "new" => new(arguments),
         _ => {
             println!("Command was invalid!");
@@ -116,7 +126,7 @@ fn add(mut target_path: PathBuf, tags: std::env::Args) -> Result<(), String> {
     }
 }
 
-fn new(tags: std::env::Args) -> Result<(), String> {
+fn new(tags: Args) -> Result<(), String> {
     let mut definitions = load_definitions()?;
 
     // Add all tags to the `CRTagDefinitions.toml` file
@@ -150,6 +160,47 @@ fn new(tags: std::env::Args) -> Result<(), String> {
             definitions.insert(tag, tag_values);
         };
     }
+
+    // Store the updated `CRTagDefinitions.toml` file
+    store_definitions(&definitions)
+}
+
+fn subtag(tag: String, subtags: Args) -> Result<(), String>{
+    let mut definitions = load_definitions()?;
+
+    // Check that tag exists
+    if !definitions.contains_key(&tag) {
+        return Err(format!("Could not find subtag: Tag {tag} does not exist"))
+    }
+
+    let tag_contents = definitions.get(&tag).unwrap();
+    let mut tag_contents = match tag_contents {
+        toml::Value::Table(contents) => contents.clone(),
+        _ => {return Err(format!("Could not load contents of {tag}: Contents is not of type table!"))}
+    };
+    let tag_subtags = tag_contents.get("subtags").unwrap().clone();
+    let mut tag_subtags = match tag_subtags {
+        toml::Value::Array(contents) => contents,
+        _ => {return Err("Could not read subtags: Subtags were not of type array!".to_string())}
+    };
+
+    // Check that all subtags exist and add them
+    for subtag in subtags {
+        if !definitions.contains_key(&subtag) {
+            return Err(format!("Could not give {tag} subtag {subtag}: Subtag does not exist!"))
+        }
+
+        // Ensure the subtag is in target tags
+        if !tag_subtags.contains(&toml::Value::String(subtag.clone())) {
+            tag_subtags.push(toml::Value::String(subtag));
+        }
+    }
+
+    // Edit the tag information
+    tag_contents.insert("subtags".to_string(), toml::value::Value::Array(tag_subtags));
+
+    // Edit the definitions information
+    definitions.insert(tag, toml::value::Value::Table(tag_contents));
 
     // Store the updated `CRTagDefinitions.toml` file
     store_definitions(&definitions)

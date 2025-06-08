@@ -3,11 +3,6 @@ aliases = ["coding", "code"]
 subtags = ["rust"]
 version = "1.0.0"
 
-[fish]
-aliases = []
-subtags = []
-version = "1.0.0"
-
 [languages]
 aliases = ["languages"]
 subtags = ["rust"]

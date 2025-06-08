@@ -40,7 +40,7 @@ After finding matches they are all printed out.
 
 ## subtag
 ```zsh
-crtag subtag <supertag> <subtag>
+crtag subtag <supertag> <subtags>
 crtag subtag coding rust
 crtag subtag languages rust
 ```
