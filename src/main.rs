@@ -412,12 +412,18 @@ fn store_definitions(definitions: &TomlMap) -> Result<(), String> {
 
 /// attempts to find the `CRTagDefinitions.toml` file
 fn locate_definitions() -> Result<PathBuf, String> {
-    let mut definitions_path = Path::new(".crtag/CRTagDefinitions.toml").to_path_buf();
+    let definitions_path = Path::new(".crtag/CRTagDefinitions.toml").to_path_buf();
     let mut upper_directory = Path::new(".").canonicalize().unwrap();
-    definitions_path = upper_directory.join(definitions_path);
+    let mut search_path = Path::new("").to_path_buf();
 
     // Search all parent directories for definitions
-    while !definitions_path.is_file() {
+    loop {
+        search_path = upper_directory.join(&definitions_path);
+
+        if search_path.is_file() {
+            return Ok(search_path.to_path_buf())
+        }
+
         upper_directory = match upper_directory.parent() {
             Some(path) => {
                 path.to_path_buf()
@@ -426,9 +432,5 @@ fn locate_definitions() -> Result<PathBuf, String> {
                 return Err("Could not load definitions: Definitions not found!".to_string());
             }
         };
-
-        definitions_path = upper_directory.join(definitions_path);
     }
-
-    Ok(definitions_path.to_path_buf())
 }
