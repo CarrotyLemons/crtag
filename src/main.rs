@@ -1,4 +1,7 @@
-use std::{env::Args, path::PathBuf, path::Path};
+use std::{
+    env::Args,
+    path::{Path, PathBuf},
+};
 
 /// specifies the semantic version of CarroTag being used
 static VERSION: &str = "1.0.0";
@@ -24,22 +27,29 @@ fn main() {
     // Handle CLI argument processing and call functions
     let result: Result<(), String> = match command.as_str() {
         "init" => {
-            let crtag_path;
+            // Ensure a `CRTagDefinitions.toml` does not already exist
+            match load_definitions() {
+                Ok(_) => {
+                    println!("Cannot init: Definitions already exist!");
+                    return;
+                }
+                _ => {}
+            };
+
+            let crtag_directory;
 
             // Convert path from supplied representation into its `.crtag` represetnation
             match arguments.next() {
-                Some(supplied_path) => {
-                    crtag_path = [supplied_path, ".crtag".to_string()].join("/");
+                Some(supplied_directory) => {
+                    crtag_directory = supplied_directory;
                 }
                 // By default use current directory
-                None => {
-                    crtag_path = ".crtag".to_string();
-                }
+                None => {crtag_directory = ".".to_string()}
             };
 
-            let crtag_path = Path::new(crtag_path.as_str()).to_path_buf();
+            let crtag_directory = Path::new(crtag_directory.as_str()).to_path_buf();
 
-            match ensure_file_exists(&crtag_path, "CRTagDefinitions.toml".to_string()) {
+            match ensure_crtag_file(&crtag_directory, "CRTagDefinitions.toml".to_string()) {
                 Ok(_) => Ok(()),
                 Err(message) => Err(message),
             }
@@ -55,7 +65,7 @@ fn main() {
 
             add(target_path, arguments)
         }
-        // "find" => find(arguments, definitions),
+        "find" => find(arguments),
         "subtag" => {
             let tag = match arguments.next() {
                 Some(contents) => contents,
@@ -66,12 +76,12 @@ fn main() {
             };
 
             subtag(tag, arguments)
-        },
+        }
         "new" => new(arguments),
         "version" => {
             println!("{VERSION}");
             Ok(())
-        },
+        }
         _ => {
             println!("Command was invalid!");
             return;
@@ -84,30 +94,58 @@ fn main() {
     };
 }
 
-fn add(mut target_path: PathBuf, tags: Args) -> Result<(), String> {
-    // load definitions
+fn add(supplied_directory: PathBuf, tags: Args) -> Result<(), String> {
     let definitions = load_definitions()?;
 
-    target_path.push(".crtag");
-
     // Load in `crtag.toml` sidecar file
-    let tag_file_path = ensure_file_exists(&target_path, "CRTag.toml".to_string())?;
+    let tag_file_path = ensure_crtag_file(&supplied_directory, "CRTag.toml".to_string())?;
     let tag_file_contents = std::fs::read_to_string(&tag_file_path).unwrap();
     let mut tag_file_contents = tag_file_contents.parse::<toml::Table>().unwrap();
 
     // Update version in sidecar file
-    tag_file_contents.insert("version".to_string(), toml::Value::String(VERSION.to_string()));
+    tag_file_contents.insert(
+        "version".to_string(),
+        toml::Value::String(VERSION.to_string()),
+    );
 
     // Adds all tags to crtag sidecar file
+    let mut invalid_tags: Result<(), Vec<String>> = Ok(());
     for tag in tags {
         if !definitions.contains_key(&tag) {
-            return Err(format!(
-                "Could not add tag {tag}: Tag is not in the definitions!"
-            ));
+            // Add tag to error message
+            match invalid_tags.clone() {
+                Ok(_) => {
+                    let mut invalid_message: Vec<String> = Vec::new();
+                    invalid_message.push(format!("Could not add tag {tag}: Tag is not in the definitions!"));
+                    invalid_tags = Err(invalid_message);
+                },
+                Err(message) => {
+                    let mut message = message.clone();
+                    message.push(format!("Could not add tag {tag}: Tag is not in the definitions!"));
+                    invalid_tags = Err(message);
+                }
+            }
         }
 
-        tag_file_contents =
-            ensure_crtag_has_tag_on_target(&definitions, tag_file_contents, tag)?;
+        // Ensure tags exists
+        let crtag_tags = match tag_file_contents.get("tags") {
+            Some(contents) => contents.clone(),
+            None => toml::value::Value::Array(Vec::new()),
+        };
+
+        // Ensure the tags are an array
+        let mut crtag_tags = match crtag_tags {
+            toml::Value::Array(contents) => contents,
+            _ => return Err("Could not read tags: Tags were not of type array!".to_string()),
+        };
+
+        // Ensure the tag is in target tags
+        if !crtag_tags.contains(&toml::Value::String(tag.clone())) {
+            crtag_tags.push(toml::Value::String(tag));
+        }
+
+        // Edit the crtag map
+        tag_file_contents.insert("tags".to_string(), toml::value::Value::Array(crtag_tags));
     }
 
     // Stores the `CRTag.toml` at the specified path
@@ -122,11 +160,18 @@ fn add(mut target_path: PathBuf, tags: Args) -> Result<(), String> {
     };
 
     match std::fs::write(tag_file_path, toml_string) {
-        Ok(_) => Ok(()),
-        Err(error) => Err(format!(
+        Ok(_) => {},
+        Err(error) => return Err(format!(
             "Could not write toml string: {}",
             error.to_string()
         )),
+    };
+
+    match invalid_tags.clone() {
+        Ok(_) => Ok(()),
+        Err(message) => {
+            Err(message.join("\n"))
+        }
     }
 }
 
@@ -135,30 +180,15 @@ fn new(tags: Args) -> Result<(), String> {
 
     // Add all tags to the `CRTagDefinitions.toml` file
     for tag in tags {
-        if definitions.contains_key(&tag) {
-            match definitions[&tag] {
-                toml::Value::Table(_) => {}
-                _ => {
-                    return Err(
-                        "Could not process tag: tag contents is not of type table".to_string()
-                    )
-                }
-            };
-        } else {
+        if !definitions.contains_key(&tag) {
             let mut tag_values = toml::map::Map::new();
 
             tag_values.insert(
                 "version".to_string(),
                 toml::Value::String(VERSION.to_string()),
             );
-            tag_values.insert(
-                "aliases".to_string(),
-                toml::Value::Array(Vec::new()),
-            );
-            tag_values.insert(
-                "subtags".to_string(),
-                toml::Value::Array(Vec::new()),
-            );
+            tag_values.insert("aliases".to_string(), toml::Value::Array(Vec::new()));
+            tag_values.insert("subtags".to_string(), toml::Value::Array(Vec::new()));
 
             let tag_values = toml::value::Value::Table(tag_values);
             definitions.insert(tag, tag_values);
@@ -169,29 +199,165 @@ fn new(tags: Args) -> Result<(), String> {
     store_definitions(&definitions)
 }
 
-fn subtag(tag: String, subtags: Args) -> Result<(), String>{
+fn find(tags: Args) -> Result<(), String> {
+    let definitions = load_definitions()?;
+
+    let mut searchable_tags = Vec::new();
+
+    // Create the list of all searchable tags
+    for tag in tags {
+        searchable_tags.push(tag.clone());
+
+        let subtags;
+        // Get tag attributes
+        match definitions.get(tag.as_str()) {
+            Some(contents) => {
+                match contents.clone().get("subtags") {
+                    Some(contents) => subtags = contents.clone(),
+                    None => continue
+                };
+            },
+            None => continue
+        }
+
+        // Ignore if subtags does not match needed format, should be permissive when searching.
+        let subtags = match subtags {
+            toml::value::Value::Array(contents) => contents,
+            _ => continue,
+        };
+
+        for subtag in subtags {
+            match subtag {
+                toml::Value::String(contents) => searchable_tags.push(contents),
+                _ => continue,
+            }
+        }
+    }
+
+    // Search for subtags
+    let definitions_path = locate_definitions()?.parent().unwrap().parent().unwrap().to_path_buf();
+
+    let found = search_dir(definitions_path, &searchable_tags, Vec::new())?;
+
+    for item in found {
+        println!("{item}");
+    }
+
+    Ok(())
+}
+
+fn ensure_crtag_file(crtag_directory: &PathBuf, file: String) -> Result<PathBuf, String>{
+    let mut crtag_directory = crtag_directory.clone();
+
+    if !crtag_directory.is_dir() {
+        return Err(format!("Could not create file: {} is not a valid directory!", crtag_directory.to_str().unwrap()))
+    }
+
+    crtag_directory.push(".crtag");
+
+    if !crtag_directory.is_dir() {
+        std::fs::create_dir(crtag_directory.clone()).unwrap();
+    }
+
+    crtag_directory.push(file);
+
+    if !crtag_directory.exists() {
+        std::fs::write(&crtag_directory, "").unwrap();
+    }
+
+    Ok(crtag_directory)
+}
+
+fn search_dir(
+    dir: PathBuf,
+    tags: &Vec<String>,
+    mut found: Vec<String>,
+) -> Result<Vec<String>, String> {
+
+    // Add matches to output
+    let mut potential_tag_dir = dir.clone();
+    potential_tag_dir.push(".crtag/CRTag.toml");
+
+    // Add data to crtag contents
+    'get_tags: {
+        // Load crtag contents of this directory if applicable
+        let crtag_contents = match std::fs::read_to_string(&potential_tag_dir) {
+            Ok(contents) => {
+                contents.parse::<toml::Table>().unwrap()
+            },
+            _ => {break 'get_tags}
+        };
+    
+        let crtag_tags = match crtag_contents.get("tags") {
+            Some(contents) => {contents.clone()},
+            _ => {break 'get_tags}
+        };
+
+
+        let crtag_tags = match crtag_tags {
+            toml::value::Value::Array(contents) => {
+                contents
+            },
+            _ => {break 'get_tags}
+        };
+
+        for search_tag in tags {
+            if crtag_tags.contains(&toml::Value::String(search_tag.clone())) && !found.contains(&search_tag){
+                found.push(dir.to_str().unwrap().to_string())
+            }
+        }
+    }
+
+    // Get all files in the dir
+    let files = match dir.read_dir() {
+        Ok(sub_dirs) => sub_dirs,
+        Err(error) => return Err(format!("Could not search dir {}: {}", dir.to_str().unwrap(), error.to_string())),
+    };
+
+    // Recurse for each directory found
+    for file in files {
+        match file {
+            Ok(contents) => {
+                if contents.path().is_dir() {
+                    found = search_dir(contents.path(), tags, found)?;
+                }
+            }
+            Err(_) => continue,
+        }
+    }
+
+    return Ok(found)
+}
+
+fn subtag(tag: String, subtags: Args) -> Result<(), String> {
     let mut definitions = load_definitions()?;
 
     // Check that tag exists
     if !definitions.contains_key(&tag) {
-        return Err(format!("Could not find subtag: Tag {tag} does not exist"))
+        return Err(format!("Could not find subtag: Tag {tag} does not exist"));
     }
 
     let tag_contents = definitions.get(&tag).unwrap();
     let mut tag_contents = match tag_contents {
         toml::Value::Table(contents) => contents.clone(),
-        _ => {return Err(format!("Could not load contents of {tag}: Contents is not of type table!"))}
+        _ => {
+            return Err(format!(
+                "Could not load contents of {tag}: Contents is not of type table!"
+            ))
+        }
     };
     let tag_subtags = tag_contents.get("subtags").unwrap().clone();
     let mut tag_subtags = match tag_subtags {
         toml::Value::Array(contents) => contents,
-        _ => {return Err("Could not read subtags: Subtags were not of type array!".to_string())}
+        _ => return Err("Could not read subtags: Subtags were not of type array!".to_string()),
     };
 
     // Check that all subtags exist and add them
     for subtag in subtags {
         if !definitions.contains_key(&subtag) {
-            return Err(format!("Could not give {tag} subtag {subtag}: Subtag does not exist!"))
+            return Err(format!(
+                "Could not give {tag} subtag {subtag}: Subtag does not exist!"
+            ));
         }
 
         // Ensure the subtag is in target tags
@@ -201,71 +367,16 @@ fn subtag(tag: String, subtags: Args) -> Result<(), String>{
     }
 
     // Edit the tag information
-    tag_contents.insert("subtags".to_string(), toml::value::Value::Array(tag_subtags));
+    tag_contents.insert(
+        "subtags".to_string(),
+        toml::value::Value::Array(tag_subtags),
+    );
 
     // Edit the definitions information
     definitions.insert(tag, toml::value::Value::Table(tag_contents));
 
     // Store the updated `CRTagDefinitions.toml` file
     store_definitions(&definitions)
-}
-
-/// creates file at path if it does not already exist
-fn ensure_file_exists(crtag_path: &PathBuf, file_name: String) -> Result<PathBuf, String> {
-    ensure_crtag_directory_exists(&crtag_path)?;
-
-    let mut ensured_path = crtag_path.clone();
-
-    // Check if tag file exists
-    ensured_path.push(&file_name);
-    if !ensured_path.is_file() {
-        // Create file
-        match std::fs::write(&ensured_path, "") {
-            Ok(_) => Ok(ensured_path),
-            Err(error) => Err(format!(
-                "With path {}\nCould not make {} for init: {error}!",
-                ensured_path.to_str().unwrap().to_string(),
-                file_name
-            )),
-        }
-    } else {
-        Ok(ensured_path)
-    }
-}
-
-/// tags target with a tag if it does not already have it
-fn ensure_crtag_has_tag_on_target(
-    definitions: &TomlMap,
-    mut crtag: TomlMap,
-    tag: String,
-) -> Result<TomlMap, String> {
-    // Check if key exists in definitions
-    if !definitions.contains_key(&tag) {
-        return Err("Could not ensure tag on target: Tag does not exist!".to_string());
-    };
-
-    // Ensure tags exists and is an array
-    let crtag_tags = match crtag.get("tags") {
-        Some(contents) => contents.clone(),
-        None => {
-            toml::value::Value::Array(Vec::new())
-        }
-    };
-
-    let mut crtag_tags  = match crtag_tags {
-        toml::Value::Array(contents) => contents,
-        _ => {return Err("Could not read tags: Tags were not of type array!".to_string())}
-    };
-
-    // Ensure the tag is in target tags
-    if !crtag_tags.contains(&toml::Value::String(tag.clone())) {
-        crtag_tags.push(toml::Value::String(tag));
-    }
-
-    // Edit the crtag map
-    crtag.insert("tags".to_string(), toml::value::Value::Array(crtag_tags));
-
-    Ok(crtag)
 }
 
 /// loads the `CRTagDefinitions.toml`
@@ -302,11 +413,15 @@ fn store_definitions(definitions: &TomlMap) -> Result<(), String> {
 /// attempts to find the `CRTagDefinitions.toml` file
 fn locate_definitions() -> Result<PathBuf, String> {
     let mut definitions_path = Path::new(".crtag/CRTagDefinitions.toml").to_path_buf();
+    let mut upper_directory = Path::new(".").canonicalize().unwrap();
+    definitions_path = upper_directory.join(definitions_path);
 
     // Search all parent directories for definitions
     while !definitions_path.is_file() {
-        let upper_directory = match Path::new("").parent() {
-            Some(path) => path,
+        upper_directory = match upper_directory.parent() {
+            Some(path) => {
+                path.to_path_buf()
+            },
             None => {
                 return Err("Could not load definitions: Definitions not found!".to_string());
             }
@@ -316,22 +431,4 @@ fn locate_definitions() -> Result<PathBuf, String> {
     }
 
     Ok(definitions_path.to_path_buf())
-}
-
-fn ensure_crtag_directory_exists(path: &PathBuf) -> Result<(), String> {
-    // Check if crtag directory exists
-    if !path.is_dir() {
-        // Create path
-        match std::fs::create_dir(&path) {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                return Err(format!(
-                    "With path {}\nCould not make dir: {error}!",
-                    path.to_str().unwrap().to_string()
-                ))
-            }
-        }
-    } else {
-        Ok(())
-    }
 }

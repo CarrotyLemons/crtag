@@ -1,13 +1,10 @@
 [coding]
-aliases = ["coding", "code"]
 subtags = ["rust"]
 version = "1.0.0"
 
 [languages]
-aliases = ["languages"]
 subtags = ["rust"]
 version = "1.0.0"
 
 [rust]
-aliases = ["rust", "rustacean", "ferris"]
 version = "1.0.0"

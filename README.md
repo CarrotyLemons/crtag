@@ -4,14 +4,12 @@ Currently I am running into problems with my file system. When my files have mul
 # Features
 - Can add attributes to attributes
 - Able to search directories by tag
-    - name
-    - alias'
 - Should work on all UNIX based OS's
 - CLI
 - Tag metadata is bundled inside the tagged directory as `CRTag.toml` sidecar files inside `.crtag` directories
 - Changes made are pushed out to the filesystem
 
-CRTag must be run inside a directory that contains a `CRTagDefinitions.toml` which will hold all the tags and aliases. The program will attempt to search upwards for these definitions but will error if not found.
+CRTag must be run inside a directory that contains a `CRTagDefinitions.toml` which will hold all the tags. The program will attempt to search upwards for these definitions but will error if not found.
 
 All tags can only be ASCII symbols. This is not enforced but the program is not guaranteed to work with other character sets.
 
@@ -63,17 +61,14 @@ Prints out the version of crtag that is running
 ## CRTagDefinitions
 ```toml
 [coding]
-aliases = ["coding", "code"] # Shorthands and alternate names
 subtags = ["rust"]
 version = "1.0.0" # Describes the semantic versioning of the program version that created this tag
 
 [languages]
-aliases = ["languages"]
 subtags = ["rust"]
 version = "1.0.0"
 
 [rust]
-aliases = ["rust", "rustacean", "ferris"]
 version = "1.0.0"
 
 ```
@@ -84,12 +79,9 @@ tags = ["rust", "coding"]
 version = "1.0.0" # Describes the semantic versioning of the program that tagged this file
 ```
 
-# Stuff to debug
-- Currently search doesn't work
-- aliases are not implemented
-- rework to only target directories
-- rework so that if a invalid tag is encountered all other tags are still added
-
 # Future improvement
 If continue with this, I might consider the following
 - creating types and associated methods for tag and definitions files instead of a function based method.
+- end to end tests of full functionality
+- functionality to remove tags, subtags and a tag from a directory
+- tag aliases
