@@ -82,6 +82,9 @@ fn main() {
             println!("{VERSION}");
             Ok(())
         }
+        "list" => {
+            list()
+        }
         _ => {
             println!("Command was invalid!");
             return;
@@ -241,6 +244,25 @@ fn find(tags: Args) -> Result<(), String> {
 
     for item in found {
         println!("{item}");
+    }
+
+    Ok(())
+}
+
+fn list() -> Result<(), String> {
+    let definitions = load_definitions()?;
+
+    for tag in definitions {
+        print!("{} - subtags: ", tag.0);
+        match tag.1["subtags"].clone() {
+            toml::Value::Array(contents) => {
+                for subtag in contents {
+                    print!("{subtag}");
+                }
+            }
+            _ => {}
+        }
+        println!()
     }
 
     Ok(())
@@ -414,7 +436,7 @@ fn store_definitions(definitions: &TomlMap) -> Result<(), String> {
 fn locate_definitions() -> Result<PathBuf, String> {
     let definitions_path = Path::new(".crtag/CRTagDefinitions.toml").to_path_buf();
     let mut upper_directory = Path::new(".").canonicalize().unwrap();
-    let mut search_path = Path::new("").to_path_buf();
+    let mut search_path;
 
     // Search all parent directories for definitions
     loop {

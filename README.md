@@ -57,6 +57,12 @@ crtag version
 ```
 Prints out the version of crtag that is running
 
+## list
+```zsh
+crtag list
+```
+Prints out all tags and their subtags
+
 # File structure
 ## CRTagDefinitions
 ```toml
