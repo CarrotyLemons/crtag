@@ -253,11 +253,17 @@ fn list() -> Result<(), String> {
     let definitions = load_definitions()?;
 
     for tag in definitions {
-        print!("{} - subtags: ", tag.0);
+        print!("{}", tag.0);
         match tag.1["subtags"].clone() {
             toml::Value::Array(contents) => {
+                if !contents.is_empty() {
+                    print!(":");
+                }
                 for subtag in contents {
-                    print!("{subtag}");
+                    match subtag {
+                        toml::Value::String(message) => {print!("\n\t{message}");}
+                        _ => {}
+                    }
                 }
             }
             _ => {}
