@@ -1,0 +1,11 @@
+[coding]
+subtags = ["rust"]
+version = "1.0.0"
+
+[languages]
+subtags = ["rust"]
+version = "1.0.0"
+
+[rust]
+subtags = [""]
+version = "1.0.0"

@@ -1,113 +1,93 @@
 # Problem statement
-Currently I am running into problems with my file system. When my files have multiple attributes (e.g. something is both a rust program and a control algorithm). I am unable to hierarchically organise my files without losing information. I want to be able to tag files, with similiar functionality to TagStudio. 
+Currently I am running into problems with my file system. When my files have multiple attributes (e.g. something is both a rust program and a control algorithm). I am unable to hierarchically organise my files without excessive symlinks which I dislike. I want to be able to tag directories and then search these tags.
+
+# Features
 - Can add attributes to attributes
-- Able to search files by tag
-    - name
-    - alias
-    - shorthand
-- Tag metadata is bundled horizontally along with files
-- Absolutely must be system interoperable (CLI should work in any bash shell)
-
-Some functionality I want to have that TagStudio does not include
-- automatic timestamp tag (serach by year, year+month, year+month+day)
-    - Would be created on first creation of that tag
-    - Can be edited manually and with command
+- Able to search directories by tag
+- Should work on all UNIX based OS's
 - CLI
-- Hashing of files to check for renaming (only works if contents are unchanged)
-- Information to be stored in sidecar files (`CarroTag.toml`?), nothing stored in CarroTag software package
-- Changes made are pushed out to the filesystem (error raised if conflict found)
-- Human readable information storage format (intersystem operability when no CarroTag available)
-- Created with rust
-- This allows a very fast CarroTag interface while preserving human readability
+- Tag metadata is bundled inside the tagged directory as `CRTag.toml` sidecar files inside `.crtag` directories
+- Changes made are pushed out to the filesystem
 
-This would allow me to structure folders up until I hit that attribute issue, at which point all further files and directories are organised flat and held at the same level in the same directory. At this point a metadata file would take over and be read by CarroTag.
+CRTag must be run inside a directory that contains a `CRTagDefinitions.toml` which will hold all the tags. The program will attempt to search upwards for these definitions but will error if not found.
 
-CarroTag must be run inside a directory that contains a `CarroTagDefinitions.toml` which will hold all the tags and aliases. The program will attempt to serach upwards but will error if not found.
+All tags can only be ASCII symbols. This is not enforced but the program is not guaranteed to work with other character sets.
 
-If a file cannot be found (moved) it searches for matching names and/or hashes. If either or those are found it in search path it suggests the moving of relevant tags. Otherwise it continues on and prints that a missing file was encountered.
-
-All tags can only be letters underscores and numbers
-`(?:[a-z]|[A-Z]|_|[0-9])+`
-
-# Functionality to implement
-## General functionality
-Terminal text output colouring
-
-## Commands to implement
+# Commands
+## init
 ```zsh
-carrotag add filename.txt tag1 tag2
-carrotag add directoryname tag1 tag2 tag3
+crtag init # Will run in the current directory
+crtag init <path>
 ```
-Adds tags to relevant directory and creates 
+Creates the CRTagDefinitions at the specified path
 
-
+## add
 ```zsh
-carrotag find search_term --path pathname
+crtag add directoryname <tags>
 ```
+Adds tags to relevant directory and creates the `CRTag.toml` if necessary.
+Errors if it encounters a unknown tag, tags that are allowable are still added.
 
-Searches for all files named with search_term in path recursively
-- looks for filename
-- looks for text inside relevant documents (`.txt` and `.md`)
-- looks for tags and tag aliases (not case sensitive)
-- if pathname is specified it searches in that directory
-
-Will print out a list of all directories/files that are a match
-
+## find
 ```zsh
-carrotag date filename.txt "now"
-carrotag date filename.txt "18-May-2025"
+crtag find <search_terms>
 ```
-This will add either the current date or the specified date to the alternate_times. If the input is invalid it will error
+Searches for the tag or its subtags in the `CRTag.toml` files, down from `CRTagDefinitions.toml`
+After finding matches they are all printed out.
 
+## subtag
 ```zsh
-carrotag subtag tag supertag
-carrotag subtag rust coding
+crtag subtag <supertag> <subtags>
+crtag subtag coding rust
+crtag subtag languages rust
 ```
 Tags the relevant tag with the supertag so all searches of the supertag return the tag.
 A single tag can have multiple supertags and vice versa. This will create the tag and supertag if they do not exist.
+This is case-sensitive, and errors on tags not being known.
 
+## new
 ```zsh
-carrotag check
-carrotag check file_path
-```
-Searches for misplaced files or changes and returns them
-
-```zsh
-carrotag new tag1 tag2
+crtag new tag1 tag2
 ```
 Creates new tags
-# Implemented commands
+
+## version
+```zsh
+crtag version
+```
+Prints out the version of crtag that is running
+
+## list
+```zsh
+crtag list
+```
+Prints out all tags and their subtags
 
 # File structure
-## CarroTagDefinitions
+## CRTagDefinitions
 ```toml
-[rust]
-version = "1.0.0"
-aliases = ["rust", "rustacean", "ferris"]
-supertags = ["coding", "languages"]
-
 [coding]
-version = "1.0.0"
-aliases = ["coding", "code"]
+subtags = ["rust"]
+version = "1.0.0" # Describes the semantic versioning of the program version that created this tag
 
 [languages]
+subtags = ["rust"]
 version = "1.0.0"
-aliases = ["languages"]
+
+[rust]
+version = "1.0.0"
+
 ```
 
-## CarroTag
+## CRTag
 ```toml
-[myfile1]
-hash = "644bcc7e564373040999aac89e7622f3ca71fba1d972fd94a31c3bfbf24e3938"
 tags = ["rust", "coding"]
-version = "1.0.0" # What version of CarroTag this was created to be compatible with 
-
-[mydirectory]
-# There is no hash for directories, just confirming name
-tags = ["art", "painting", "fireworks"]
-version = "1.0.0" # What version of CarroTag this was created to be compatible with 
-
-[mydirectory.timing]
-creation_time = "18-May-2025"
-alternate_times = ["25-May-2025", "01-Jan-2100"]
+version = "1.0.0" # Describes the semantic versioning of the program that tagged this file
 ```
+
+# Future improvement
+If continue with this, I might consider the following
+- creating types and associated methods for tag and definitions files instead of a function based method.
+- end to end tests of full functionality
+- functionality to remove tags, subtags and a tag from a directory
+- tag aliases
